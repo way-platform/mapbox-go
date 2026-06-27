@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "way-go-style": {
+      "source": "way-platform/skills",
+      "sourceType": "github",
+      "skillPath": "way-go-style/SKILL.md",
+      "computedHash": "786907e7b6fec712353685fad08256d7bd46cb8ac735444d561e51fa3f0700e6"
+    }
+  }
+}

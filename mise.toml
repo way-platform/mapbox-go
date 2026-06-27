@@ -1,0 +1,40 @@
+# mapbox-go mise configuration
+#
+# Usage examples:
+#   mise install                # Install all tools
+#   mise run build              # Full CI build
+#   mise run lint               # Run linter
+#   mise run test               # Run tests
+#   mise run cli                # Build mapbox CLI binary
+
+[tools]
+go = "1.24"
+golangci-lint = "2.10"
+
+[tasks.build]
+description = "run full CI build"
+run = "mise run lint && mise run test && mise run tidy && mise run cli && mise run diff"
+
+[tasks.lint]
+description = "lint Go code"
+run = "golangci-lint run --fix"
+
+[tasks.test]
+description = "run Go tests"
+run = "go test -count=1 -cover ./..."
+
+[tasks.tidy]
+description = "tidy Go mod files"
+run = "go mod tidy -v"
+
+[tasks.cli]
+description = "build mapbox CLI binary"
+run = "go install ./..."
+
+[tasks.diff]
+description = "check for git diffs"
+run = """
+if git rev-parse --is-inside-work-tree &>/dev/null && ! jj root &>/dev/null; then
+  git diff --exit-code
+fi
+"""
