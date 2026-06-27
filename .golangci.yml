@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://golangci-lint.run/jsonschema/golangci.jsonschema.json
+version: "2"
+
+linters:
+  enable:
+    - gosec
+
+  settings:
+    gosec:
+      excludes:
+        # SSRF taint analysis: SDK HTTP client calls caller-provided URLs by design.
+        - G704
+        # Struct field name matching secret pattern: AccessToken is a data carrier, not a hardcoded secret.
+        - G117
+        # Weak random: math/rand/v2 is intentional for backoff jitter, not cryptographic use.
+        - G404
+
+  exclusions:
+    rules:
+      # Test files: hardcoded test tokens and URLs are not vulnerabilities.
+      - path: "_test\\.go"
+        linters:
+          - gosec
+        text: "G101|G304|G306"
+      # CLI credential file writes are intentional.
+      - path: "cli/"
+        linters:
+          - gosec
+        text: "G306"
