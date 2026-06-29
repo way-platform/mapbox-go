@@ -1,0 +1,35 @@
+# GoReleaser configuration for the mapbox CLI.
+#
+# The repository root package is the importable `mapbox` library, which has no
+# main function. The CLI entry point lives in ./cmd/mapbox, so the build must
+# point there explicitly; otherwise GoReleaser defaults to "." and fails with
+# "does not contain a main function".
+version: 2
+
+builds:
+  - id: mapbox
+    binary: mapbox
+    main: ./cmd/mapbox
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
