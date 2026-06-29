@@ -12,6 +12,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history + tags so commitlint and semantic-release can range
+          # over commits since the last release.
+          fetch-depth: 0
 
       - name: Install mise
         uses: jdx/mise-action@v2
