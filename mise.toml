@@ -8,16 +8,32 @@
 #   mise run cli                # Build mapbox CLI binary
 
 [tools]
-go = "1.24"
+go = "1.26"
 golangci-lint = "2.10"
+"npm:@commitlint/cli" = "21"
 
 [tasks.build]
 description = "run full CI build"
-run = "mise run lint && mise run test && mise run tidy && mise run cli && mise run diff"
+run = "mise run lint:commits && mise run lint && mise run test && mise run tidy && mise run cli && mise run diff"
 
 [tasks.lint]
 description = "lint Go code"
 run = "golangci-lint run --fix"
+
+[tasks."lint:commits"]
+description = "lint commit messages (conventional commits)"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+if [ -n "${GITHUB_BASE_REF:-}" ]; then
+  git fetch origin "$GITHUB_BASE_REF" 2>/dev/null || true
+  commitlint --from "origin/$GITHUB_BASE_REF" --to HEAD
+elif [ -n "$(git tag -l)" ]; then
+  commitlint --from "$(git describe --tags --abbrev=0)" --to HEAD
+else
+  commitlint --last
+fi
+"""
 
 [tasks.test]
 description = "run Go tests"
