@@ -278,6 +278,48 @@ func TestMapMatch_ValidationErrors(t *testing.T) {
 	}
 }
 
+func TestMapMatch_GeometryDecoded(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"code": "Ok",
+			"matchings": [{
+				"confidence": 0.9,
+				"geometry": {
+					"type": "LineString",
+					"coordinates": [[24.846, 60.315], [24.848, 60.316]]
+				},
+				"distance": 100,
+				"duration": 30
+			}],
+			"tracepoints": []
+		}`))
+	}))
+	defer srv.Close()
+
+	client := mapbox.NewClient(mapbox.WithAccessToken("t"), mapbox.WithBaseURL(srv.URL))
+	resp, err := client.MapMatch(context.Background(), &mapbox.MapMatchRequest{
+		Coordinates: []mapbox.Coordinate{{Longitude: 24.846, Latitude: 60.315}, {Longitude: 24.848, Latitude: 60.316}},
+	})
+	if err != nil {
+		t.Fatalf("MapMatch error: %v", err)
+	}
+	if len(resp.Matchings) != 1 {
+		t.Fatalf("len(Matchings) = %d, want 1", len(resp.Matchings))
+	}
+	coords := resp.Matchings[0].Geometry.Coordinates
+	if len(coords) != 2 {
+		t.Fatalf("len(Coordinates) = %d, want 2", len(coords))
+	}
+	// GeoJSON is [longitude, latitude]
+	if coords[0][0] != 24.846 || coords[0][1] != 60.315 {
+		t.Errorf("coords[0] = %v, want [24.846 60.315]", coords[0])
+	}
+	if coords[1][0] != 24.848 || coords[1][1] != 60.316 {
+		t.Errorf("coords[1] = %v, want [24.848 60.316]", coords[1])
+	}
+}
+
 func TestEncodeCoordinates(t *testing.T) {
 	got := encodeCoordinatesForTest(t, []mapbox.Coordinate{
 		{Longitude: 13.4, Latitude: 52.5},

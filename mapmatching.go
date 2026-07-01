@@ -81,10 +81,11 @@ type Tracepoint struct {
 	Name string `json:"name"`
 }
 
-// GeoJSONGeometry is a GeoJSON geometry object.
+// GeoJSONGeometry is the GeoJSON LineString geometry returned by the Map Matching API.
+// Each element of Coordinates is a [longitude, latitude] pair, following GeoJSON axis order.
 type GeoJSONGeometry struct {
-	Type        string `json:"type"`
-	Coordinates any    `json:"coordinates"`
+	Type        string      `json:"type"`
+	Coordinates [][]float64 `json:"coordinates"`
 }
 
 // MapMatch submits GPS coordinates to the Mapbox Map Matching API.
