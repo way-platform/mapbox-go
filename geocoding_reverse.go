@@ -16,6 +16,9 @@ type ReverseGeocodeRequest struct {
 	Longitude float64
 	// Latitude is the coordinate to reverse geocode.
 	Latitude float64
+	// Permanent requests Permanent tier geocoding, which permits storing results.
+	// Defaults to Temporary tier when false.
+	Permanent bool
 }
 
 // ReverseGeocode performs a single reverse geocode lookup using Geocoding v6.
@@ -29,6 +32,9 @@ func (c *Client) ReverseGeocode(ctx context.Context, req *ReverseGeocodeRequest)
 	params := url.Values{}
 	params.Set("longitude", strconv.FormatFloat(req.Longitude, 'f', -1, 64))
 	params.Set("latitude", strconv.FormatFloat(req.Latitude, 'f', -1, 64))
+	if req.Permanent {
+		params.Set("permanent", "true")
+	}
 
 	endpoint := c.baseURL + "/search/geocode/v6/reverse?" + params.Encode()
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
