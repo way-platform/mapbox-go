@@ -28,7 +28,7 @@ type Suggestion struct {
 // RetrieveFeature is a GeoJSON Feature returned by /retrieve.
 type RetrieveFeature struct {
 	Type       string                    `json:"type"`
-	Geometry   GeoJSONGeometry           `json:"geometry"`
+	Geometry   PointGeometry             `json:"geometry"`
 	Properties RetrieveFeatureProperties `json:"properties"`
 }
 

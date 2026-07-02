@@ -121,6 +121,49 @@ func TestReverseGeocode_ContextParsing(t *testing.T) {
 	}
 }
 
+func TestReverseGeocode_PointGeometry(t *testing.T) {
+	// Mapbox returns Point geometry with flat [lon, lat] coordinates.
+	// Regression: GeoJSONGeometry used [][]float64 (LineString), causing decode to fail.
+	const body = `{
+		"type": "FeatureCollection",
+		"features": [{
+			"type": "Feature",
+			"geometry": {"type": "Point", "coordinates": [24.9384, 60.1699]},
+			"properties": {
+				"mapbox_id": "addr.1",
+				"feature_type": "address",
+				"full_address": "Mannerheimintie 1, 00100 Helsinki, Finland"
+			}
+		}]
+	}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if _, err := w.Write([]byte(body)); err != nil {
+			t.Errorf("write response: %v", err)
+		}
+	}))
+	defer srv.Close()
+
+	client := mapbox.NewClient(mapbox.WithAccessToken("t"), mapbox.WithBaseURL(srv.URL))
+	result, err := client.ReverseGeocode(context.Background(), &mapbox.ReverseGeocodeRequest{
+		Longitude: 24.9384,
+		Latitude:  60.1699,
+	})
+	if err != nil {
+		t.Fatalf("ReverseGeocode error: %v", err)
+	}
+	if len(result.Features) != 1 {
+		t.Fatalf("len(Features) = %d, want 1", len(result.Features))
+	}
+	f := result.Features[0]
+	if f.Geometry.Type != "Point" {
+		t.Errorf("Geometry.Type = %q, want Point", f.Geometry.Type)
+	}
+	if len(f.Geometry.Coordinates) != 2 {
+		t.Errorf("Geometry.Coordinates len = %d, want 2", len(f.Geometry.Coordinates))
+	}
+}
+
 func TestReverseGeocode_HTTPError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"message":"Not Authorized - Invalid Token"}`, http.StatusUnauthorized)
