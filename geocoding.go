@@ -6,11 +6,17 @@ type FeatureCollection struct {
 	Features []Feature `json:"features"`
 }
 
+// PointGeometry is a GeoJSON Point geometry. Coordinates holds [longitude, latitude].
+type PointGeometry struct {
+	Type        string    `json:"type"`
+	Coordinates []float64 `json:"coordinates"`
+}
+
 // Feature is a GeoJSON Feature with Mapbox v6 geocoding properties.
 type Feature struct {
 	Type       string            `json:"type"`
 	ID         string            `json:"id"`
-	Geometry   GeoJSONGeometry   `json:"geometry"`
+	Geometry   PointGeometry     `json:"geometry"`
 	Properties FeatureProperties `json:"properties"`
 }
 

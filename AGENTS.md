@@ -93,6 +93,8 @@ cmd/mapbox/
 - Testing: standard `testing` + `github.com/google/go-cmp/cmp` only. No
   Testify or other frameworks.
 - Linting: GolangCI-Lint v2, configured in `.golangci.yml`.
+- Commit subject: max 60 characters (enforced by commitlint in CI). Conventional commit prefix counts toward the limit.
+- Commit subject must not be sentence-case: first word after the prefix must be lowercase (`fix(x): add foo`, not `fix(x): Add foo`).
 
 ## Retry
 
