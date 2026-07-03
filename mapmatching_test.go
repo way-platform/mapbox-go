@@ -75,6 +75,9 @@ func TestMapMatch_FormBody(t *testing.T) {
 	if form.Get("overview") != "full" {
 		t.Errorf("overview = %q, want %q", form.Get("overview"), "full")
 	}
+	if form.Get("annotations") != "duration" {
+		t.Errorf("annotations = %q, want %q", form.Get("annotations"), "duration")
+	}
 }
 
 func TestMapMatch_RadiusesAndTimestamps(t *testing.T) {
@@ -317,6 +320,62 @@ func TestMapMatch_GeometryDecoded(t *testing.T) {
 	}
 	if coords[1][0] != 24.848 || coords[1][1] != 60.316 {
 		t.Errorf("coords[1] = %v, want [24.848 60.316]", coords[1])
+	}
+}
+
+func TestMapMatch_LegsDecoded(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"code": "Ok",
+			"matchings": [{
+				"confidence": 0.9,
+				"geometry": {
+					"type": "LineString",
+					"coordinates": [[24.846, 60.315], [24.847, 60.3155], [24.848, 60.316]]
+				},
+				"distance": 200,
+				"duration": 60,
+				"legs": [
+					{"annotation": {"duration": [1.5]}},
+					{"annotation": {"duration": [2.0, 3.0]}}
+				]
+			}],
+			"tracepoints": [
+				{"location": [24.846, 60.315], "waypoint_index": 0, "matchings_index": 0, "alternatives_count": 0, "name": "A"},
+				{"location": [24.847, 60.3155], "waypoint_index": 1, "matchings_index": 0, "alternatives_count": 0, "name": "B"},
+				{"location": [24.848, 60.316], "waypoint_index": 2, "matchings_index": 0, "alternatives_count": 0, "name": "C"}
+			]
+		}`))
+	}))
+	defer srv.Close()
+
+	client := mapbox.NewClient(mapbox.WithAccessToken("t"), mapbox.WithBaseURL(srv.URL))
+	resp, err := client.MapMatch(context.Background(), &mapbox.MapMatchRequest{
+		Coordinates: []mapbox.Coordinate{
+			{Longitude: 24.846, Latitude: 60.315},
+			{Longitude: 24.847, Latitude: 60.3155},
+			{Longitude: 24.848, Latitude: 60.316},
+		},
+	})
+	if err != nil {
+		t.Fatalf("MapMatch error: %v", err)
+	}
+	if len(resp.Matchings) != 1 {
+		t.Fatalf("len(Matchings) = %d, want 1", len(resp.Matchings))
+	}
+	legs := resp.Matchings[0].Legs
+	if len(legs) != 2 {
+		t.Fatalf("len(Legs) = %d, want 2", len(legs))
+	}
+	if legs[0].Annotation == nil || len(legs[0].Annotation.Duration) != 1 {
+		t.Fatalf("leg[0].Annotation.Duration len = %v, want 1", legs[0].Annotation)
+	}
+	if legs[1].Annotation == nil || len(legs[1].Annotation.Duration) != 2 {
+		t.Fatalf("leg[1].Annotation.Duration len = %v, want 2", legs[1].Annotation)
+	}
+	if legs[1].Annotation.Duration[0] != 2.0 || legs[1].Annotation.Duration[1] != 3.0 {
+		t.Errorf("leg[1].Annotation.Duration = %v, want [2.0, 3.0]", legs[1].Annotation.Duration)
 	}
 }
 

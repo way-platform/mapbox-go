@@ -64,6 +64,23 @@ type Matching struct {
 	Distance float64 `json:"distance"`
 	// Duration is the estimated travel time in seconds.
 	Duration float64 `json:"duration"`
+	// Legs contains one route leg per consecutive waypoint pair in this matching.
+	// Present when annotations are requested.
+	Legs []Leg `json:"legs"`
+}
+
+// Leg is a route leg between two consecutive waypoints in a matching.
+type Leg struct {
+	// Annotation contains per-segment metadata when annotations are requested.
+	Annotation *LegAnnotation `json:"annotation,omitempty"`
+}
+
+// LegAnnotation holds per-geometry-segment metadata for a route leg.
+// The length of each array equals the number of geometry coordinate pairs
+// minus one for this leg (i.e., the number of segments).
+type LegAnnotation struct {
+	// Duration is the duration in seconds for each geometry segment in the leg.
+	Duration []float64 `json:"duration,omitempty"`
 }
 
 // Tracepoint is a matched input coordinate. Nil tracepoints in
@@ -132,6 +149,7 @@ func (c *Client) MapMatch(ctx context.Context, req *MapMatchRequest) (_ *MapMatc
 	form.Set("tidy", "true")
 	form.Set("geometries", "geojson")
 	form.Set("overview", "full")
+	form.Set("annotations", "duration")
 
 	endpoint := fmt.Sprintf("%s/matching/v5/%s", c.baseURL, profile)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(form.Encode()))
