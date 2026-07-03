@@ -82,9 +82,11 @@ func (c *Client) BatchReverseGeocode(ctx context.Context, req *BatchReverseGeoco
 		return nil, newResponseError(httpResp)
 	}
 
-	var results []*FeatureCollection
-	if err := json.NewDecoder(httpResp.Body).Decode(&results); err != nil {
+	var wrapper struct {
+		Batch []*FeatureCollection `json:"batch"`
+	}
+	if err := json.NewDecoder(httpResp.Body).Decode(&wrapper); err != nil {
 		return nil, fmt.Errorf("decode response: %w", err)
 	}
-	return results, nil
+	return wrapper.Batch, nil
 }

@@ -22,9 +22,11 @@ func TestBatchReverseGeocode_JSONBody(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
 			t.Errorf("decode request body: %v", err)
 		}
-		result := []*mapbox.FeatureCollection{
-			{Type: "FeatureCollection"},
-			{Type: "FeatureCollection"},
+		result := map[string]any{
+			"batch": []map[string]any{
+				{"type": "FeatureCollection", "features": []any{}},
+				{"type": "FeatureCollection", "features": []any{}},
+			},
 		}
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(result); err != nil {
