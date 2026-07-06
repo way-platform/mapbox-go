@@ -63,6 +63,53 @@ func TestBatchReverseGeocode_JSONBody(t *testing.T) {
 	}
 }
 
+func TestBatchReverseGeocode_PermanentParam(t *testing.T) {
+	tests := []struct {
+		name      string
+		permanent bool
+		wantParam string
+	}{
+		{"temporary omits param", false, ""},
+		{"permanent sets param", true, "true"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotParam string
+			var gotBody []map[string]any
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotParam = r.URL.Query().Get("permanent")
+				if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+					t.Errorf("decode body: %v", err)
+				}
+				result := map[string]any{"batch": []map[string]any{{"type": "FeatureCollection", "features": []any{}}}}
+				w.Header().Set("Content-Type", "application/json")
+				if err := json.NewEncoder(w).Encode(result); err != nil {
+					t.Errorf("encode response: %v", err)
+				}
+			}))
+			defer srv.Close()
+
+			client := mapbox.NewClient(mapbox.WithAccessToken("t"), mapbox.WithBaseURL(srv.URL))
+			_, err := client.BatchReverseGeocode(context.Background(), &mapbox.BatchReverseGeocodeRequest{
+				Queries:   []mapbox.ReverseGeocodeQuery{{Longitude: 13.4, Latitude: 52.5}},
+				Permanent: tc.permanent,
+			})
+			if err != nil {
+				t.Fatalf("BatchReverseGeocode error: %v", err)
+			}
+			if gotParam != tc.wantParam {
+				t.Errorf("permanent param = %q, want %q", gotParam, tc.wantParam)
+			}
+			// permanent must not appear in the JSON body - it's a query param only
+			if len(gotBody) > 0 {
+				if _, ok := gotBody[0]["permanent"]; ok {
+					t.Errorf("permanent field must not appear in request body")
+				}
+			}
+		})
+	}
+}
+
 func TestBatchReverseGeocode_LimitEnforcement(t *testing.T) {
 	client := mapbox.NewClient(mapbox.WithAccessToken("t"))
 

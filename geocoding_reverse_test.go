@@ -164,6 +164,43 @@ func TestReverseGeocode_PointGeometry(t *testing.T) {
 	}
 }
 
+func TestReverseGeocode_PermanentParam(t *testing.T) {
+	tests := []struct {
+		name      string
+		permanent bool
+		wantParam string
+	}{
+		{"temporary omits param", false, ""},
+		{"permanent sets param", true, "true"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotParam string
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotParam = r.URL.Query().Get("permanent")
+				w.Header().Set("Content-Type", "application/json")
+				if err := json.NewEncoder(w).Encode(mapbox.FeatureCollection{Type: "FeatureCollection"}); err != nil {
+					t.Errorf("encode response: %v", err)
+				}
+			}))
+			defer srv.Close()
+
+			client := mapbox.NewClient(mapbox.WithAccessToken("t"), mapbox.WithBaseURL(srv.URL))
+			_, err := client.ReverseGeocode(context.Background(), &mapbox.ReverseGeocodeRequest{
+				Longitude: 13.4,
+				Latitude:  52.5,
+				Permanent: tc.permanent,
+			})
+			if err != nil {
+				t.Fatalf("ReverseGeocode error: %v", err)
+			}
+			if gotParam != tc.wantParam {
+				t.Errorf("permanent param = %q, want %q", gotParam, tc.wantParam)
+			}
+		})
+	}
+}
+
 func TestReverseGeocode_HTTPError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"message":"Not Authorized - Invalid Token"}`, http.StatusUnauthorized)
