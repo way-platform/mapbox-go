@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 )
 
 // BatchReverseGeocodeRequest is the request for Geocoding v6 Batch.
@@ -31,7 +32,6 @@ type batchGeocodeQuery struct {
 	Types     string  `json:"types"`
 	Longitude float64 `json:"longitude"`
 	Latitude  float64 `json:"latitude"`
-	Permanent bool    `json:"permanent"`
 }
 
 // BatchReverseGeocode performs a batch reverse geocode lookup using Geocoding v6 Batch.
@@ -57,7 +57,6 @@ func (c *Client) BatchReverseGeocode(ctx context.Context, req *BatchReverseGeoco
 			Types:     "address",
 			Longitude: q.Longitude,
 			Latitude:  q.Latitude,
-			Permanent: req.Permanent,
 		}
 	}
 
@@ -66,7 +65,15 @@ func (c *Client) BatchReverseGeocode(ctx context.Context, req *BatchReverseGeoco
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	endpoint := c.baseURL + "/search/geocode/v6/batch"
+	params := url.Values{}
+	if req.Permanent {
+		params.Set("permanent", "true")
+	}
+	path := "/search/geocode/v6/batch"
+	if len(params) > 0 {
+		path += "?" + params.Encode()
+	}
+	endpoint := c.baseURL + path
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
